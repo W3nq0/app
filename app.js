@@ -8,9 +8,6 @@ const port = 3000;
 const excelFilePath = 'street.xlsx';
 const outputJsonFilePath = 'generated_addresses.json';
 
-const MIN_NUMBER = 1;
-const MAX_NUMBER = 1000;
-
 function generateHouseOrApartmentNumber(isHouse) {
     const MIN_NUMBER = 1;
     const MAX_NUMBER = 1000;
