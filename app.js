@@ -8,15 +8,10 @@ const port = 3000;
 const excelFilePath = 'street.xlsx';
 const outputJsonFilePath = 'generated_addresses.json';
 
-function generateHouseOrApartmentNumber(isHouse) {
+function generateHouseOrApartmentNumber() {
     const MIN_NUMBER = 1;
     const MAX_NUMBER = 1000;
-    const number = Math.floor(Math.random() * (MAX_NUMBER - MIN_NUMBER + 1)) + MIN_NUMBER;
-    if (isHouse) {
-        return number <= 1000 ? number : generateHouseOrApartmentNumber(isHouse);
-    } else {
-        return number >= 1 ? number : generateHouseOrApartmentNumber(isHouse);
-    }
+    return Math.floor(Math.random() * (MAX_NUMBER - MIN_NUMBER + 1)) + MIN_NUMBER;
 }
 
 function parseExcelToJson(filePath) {
@@ -31,31 +26,34 @@ function generateAddresses(streetCount) {
     const jsonData = parseExcelToJson(excelFilePath);
     console.log("Данные из Excel файла:", jsonData);
     if (streetCount > jsonData.length) {
-        throw new Error(`Файл содержит только ${jsonData.length} улиц.`);
+        throw new Error(`Недостаточно данных. Файл содержит только ${jsonData.length} улиц.`);
     }
     const selectedStreets = jsonData.slice(0, streetCount);
 
-    const addresses = selectedStreets.map((data, index) => {
-        console.log("Обработанные данные для улицы", index + 1, ":", data);
-        const houseNumber = generateHouseOrApartmentNumber(true);
-        const apartmentNumber = generateHouseOrApartmentNumber(false);
-        let address = `улица ${data.street} дом ${houseNumber}`;
-        if (apartmentNumber < 1000) {
-            address += ` корпус ${apartmentNumber}`;
-        }
+    selectedStreets.sort((a, b) => a.street.localeCompare(b.street));
 
-        return {
-            id: index + 1,
-            address: address
+    const groupedStreets = {};
+    selectedStreets.forEach((data) => {
+        const firstLetter = data.street[0].toLowerCase();
+        if (!groupedStreets[firstLetter]) {
+            groupedStreets[firstLetter] = [];
+        }
+        const houseNumber = generateHouseOrApartmentNumber();
+        const apartmentNumber = generateHouseOrApartmentNumber();
+        const address = {
+            street: data.street,
+            houseNumber: houseNumber,
+            apartmentNumber: apartmentNumber
         };
+        groupedStreets[firstLetter].push(address);
     });
 
-    console.log("Сгенерированные адреса:", addresses);
+    console.log("Группированные улицы:", groupedStreets);
 
-    fs.writeFileSync(outputJsonFilePath, JSON.stringify(addresses, null, 2));
-    console.log(`Сгенерированные адреса записаны в ${outputJsonFilePath}`);
+    fs.writeFileSync(outputJsonFilePath, JSON.stringify(groupedStreets, null, 2));
+    console.log(`Улицы записаны в ${outputJsonFilePath}`);
 
-    return addresses;
+    return groupedStreets;
 }
 
 app.get('/api/cacheSetter', (req, res) => {
@@ -63,8 +61,8 @@ app.get('/api/cacheSetter', (req, res) => {
 
     if (!isNaN(streetCount) && streetCount > 0) {
         try {
-            const addresses = generateAddresses(streetCount);
-            res.json({ message: `Сгенерированы адреса для ${streetCount} улиц.`, addresses });
+            const streets = generateAddresses(streetCount);
+            res.json({ message: `Сгенерированы улицы для ${streetCount} улиц.`, streets });
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
