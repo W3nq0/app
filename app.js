@@ -34,7 +34,7 @@ function generateAddresses(streetCount) {
     const jsonData = parseExcelToJson(excelFilePath);
     console.log("Данные из Excel файла:", jsonData);
     if (streetCount > jsonData.length) {
-        throw new Error(`Недостаточно данных. Файл содержит только ${jsonData.length} улиц.`);
+        throw new Error(`Файл содержит только ${jsonData.length} улиц.`);
     }
     const selectedStreets = jsonData.slice(0, streetCount);
 
